@@ -14,7 +14,6 @@
   },
   "scripts": {
     "start": "node app.js",
-    "test": "c8 mocha -p -j 2 --exit test/*.test.js"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^4.3.3",
