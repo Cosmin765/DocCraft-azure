@@ -1,0 +1,10 @@
+.shareImg {
+    filter: invert(1);
+    width: 30px;
+    margin-top: 10px;
+    transition: all 0.2s;
+}
+
+.shareImg:hover {
+    filter: invert(0.75);
+}

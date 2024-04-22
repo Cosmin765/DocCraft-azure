@@ -1,0 +1,12 @@
+.main-option {
+    background-color: white;
+    color: black;
+    margin: 0 10px;
+    display: grid;
+    place-items: center;
+    padding: 10px;
+}
+
+.main-option:hover {
+    cursor: pointer;
+}

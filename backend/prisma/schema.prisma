@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model file_permissions {
+  permission_id   Int     @id(map: "PK__file_per__E5331AFA45325E15") @default(autoincrement())
+  file_id         String? @db.UniqueIdentifier
+  user_id         Int?
+  permission_type String? @db.NVarChar(50)
+  files           files?  @relation(fields: [file_id], references: [file_id], onDelete: NoAction, onUpdate: NoAction, map: "FK__file_perm__file___300424B4")
+  users           users?  @relation(fields: [user_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK__file_perm__user___30F848ED")
+}
+
+model files {
+  file_id          String             @id(map: "PK__files__07D884C6C70098D4") @default(dbgenerated("newid()"), map: "DF__files__file_id__2C3393D0") @db.UniqueIdentifier
+  file_name        String             @db.NVarChar(255)
+  file_size        Int
+  file_type        String?            @db.NVarChar(50)
+  owner_id         Int?
+  file_permissions file_permissions[]
+  users            users?             @relation(fields: [owner_id], references: [user_id], onDelete: NoAction, onUpdate: NoAction, map: "FK__files__owner_id__2D27B809")
+}
+
+model users {
+  user_id          Int                @id(map: "PK__users__B9BE370FB1252851") @default(autoincrement())
+  username         String             @db.NVarChar(50)
+  email            String             @unique(map: "UQ__users__AB6E6164587474FB") @db.NVarChar(100)
+  password         String             @db.NVarChar(100)
+  created_at       DateTime?          @default(now(), map: "DF__users__created_a__25869641") @db.DateTime
+  file_permissions file_permissions[]
+  files            files[]
+}
