@@ -13,7 +13,7 @@
     "node": ">=16.0.0"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "node app.js"
   },
   "dependencies": {
     "@google-cloud/pubsub": "^4.3.3",
