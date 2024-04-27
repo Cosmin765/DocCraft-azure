@@ -16,12 +16,13 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "@azure/event-hubs": "^5.11.4",
     "@azure/identity": "^4.1.0",
     "@azure/storage-blob": "^12.17.0",
-    "@azure/event-hubs": "^5.11.4",
     "@google-cloud/pubsub": "^4.3.3",
     "@google-cloud/storage": "^7.9.0",
     "@prisma/client": "^5.12.1",
+    "axios": "^1.6.8",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",

@@ -3,8 +3,8 @@ Services:
 - Web App (backend)
 - Sql Server (metadata)
 - Storage account (files)
-- PubSub (event trigger)
+- Event Hub (events trigger)
 - Lambda Function (event handling)
+- Translator
 - Fluid Relay (live edit) - wip
-- Translator - wip
 - Autoscale + LoadBalancing - wip
