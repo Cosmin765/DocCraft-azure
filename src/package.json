@@ -16,6 +16,7 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "@azure/event-hubs": "^5.11.4",
     "@google-cloud/pubsub": "^4.3.3",
     "@google-cloud/storage": "^7.9.0",
     "@prisma/client": "^5.12.1",
