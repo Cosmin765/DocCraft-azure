@@ -17,7 +17,8 @@ const { jwtDecode } = require('jwt-decode');
 const { env } = require('process');
 const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
 const prisma = new PrismaClient();
-const pubSubServiceClient = new WebPubSubServiceClient("https://doccraft-pubsub.webpubsub.azure.com", env.PUB_SUB_KEY, "permissions_hub");
+const storage = new Storage();
+const { EventHubProducerClient } = require("@azure/event-hubs");
 
 // async function uploadFromMemory(bucketName, destFileName, contents) {
 //   await storage.bucket(bucketName).file(destFileName).save(contents);
@@ -30,8 +31,10 @@ const pubSubServiceClient = new WebPubSubServiceClient("https://doccraft-pubsub.
 const upload = multer({});
 
 const app = express();
-const pubsub = new PubSub(env.PROJECT_ID);
-const pubsubTopic = pubsub.topic(env.TOPIC_NAME);
+const eventHubName = process.env.EVENT_HUB_NAME;
+const connectionString = process.env.HUB_CONNECTION_STRING;
+const eventHubProducer = new EventHubProducerClient(connectionString, eventHubName);
+
 app.use(express.static('public'));
 
 app.use(cors({
@@ -238,8 +241,26 @@ app.post('/share', async (req, res) => {
       await prisma.file_permissions.create({data: {file_id: file.file_id, user_id: userTo.user_id, permission_type: permissionType}});
       // pubsubTopic.publishJSON({emailFrom: email, emailTo: emailTo, permissionType: permissionType, fileName: filename})
       // pubsubTopic.publishMessage({data: Buffer.from(JSON.stringify({emailFrom: email, emailTo: emailTo, permissionType: permissionType, fileName: filename}))})
-      //TODO: test pub sub service
-      pubSubServiceClient.sendToAll({data: {file_id: file.file_id, user_id: userTo.user_id, permission_type: permissionType}});
+      const batch = await eventHubProducer.createBatch();
+      batch.tryAdd({body: {emailFrom: email, emailTo: emailTo, permissionType: permissionType, fileName: filename}});
+      await eventHubProducer.sendBatch(batch);
+
+    } catch(_) {}
+
+    return res.status(200).send('Ok');
+  } catch(error) {
+    console.log(error);
+    return res.status(500).send('Internal Server Error');
+  }
+});
+
+app.get('/test-event', async (req, res) => {
+  try {
+    try {
+      const batch = await eventHubProducer.createBatch();
+      batch.tryAdd({body: {emailFrom: "email", emailTo: "emailTo", permissionType: "permissionType", fileName: ":"}});
+      await eventHubProducer.sendBatch(batch);
+
     } catch(_) {}
 
     return res.status(200).send('Ok');
