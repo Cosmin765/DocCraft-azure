@@ -6,10 +6,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const os = require('os');
-const {PubSub} = require('@google-cloud/pubsub');
 
 const HOSTNAME = os.hostname();
-const { WebPubSubServiceClient } = require("@azure/web-pubsub");
 
 const { PrismaClient, Prisma } = require('@prisma/client')
 const verifyToken = require('./middleware/authMiddleware');
@@ -17,7 +15,6 @@ const { jwtDecode } = require('jwt-decode');
 const { env } = require('process');
 const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
 const prisma = new PrismaClient();
-const storage = new Storage();
 const { EventHubProducerClient } = require("@azure/event-hubs");
 
 // async function uploadFromMemory(bucketName, destFileName, contents) {
@@ -67,7 +64,6 @@ app.get('/', (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { name, email } = jwtDecode(req.cookies.authToken);
-  const date = new Date();
 
   const user = await prisma.users.findFirst({where: { email }});
   if (!user) {
@@ -105,7 +101,13 @@ const containerName = "files";
 
 app.get('/files', async (req, res) => {
   try {
-    // TODO: auth
+    const { email } = jwtDecode(req.cookies.authToken);
+
+    const user = await prisma.users.findFirst({ where: { email: email } });
+    if (!user) {
+      return res.status(403).send('Forbidden');
+    }
+
     const containerClient = blobServiceClient.getContainerClient(containerName);
 
     const files = [];
@@ -128,10 +130,13 @@ app.get('/contents/:filename', async (req, res) => {
   if (!filename) {
     return res.status(400).send('Filename is required.');
   }
-  // TODO: auth
-  // const { email } = jwtDecode(req.cookies.authToken);
-  const email = 'default@default.default';
+  const { email } = jwtDecode(req.cookies.authToken);
+
   const owner = await prisma.users.findFirst({ where: { email: email } });
+
+  if (owner === null) {
+    return res.status(403).send('Forbidden');
+  }
 
   // TODO: verifica permisiunea de write
   // prisma.files.findFirst({where: {email: email, file_name}})
@@ -168,9 +173,7 @@ app.post('/save/:filename', express.json(), async (req, res) => {
   const { filename } = req.params;
   const { content } = req.body;
 
-  // TODO: auth
-  // const { email } = jwtDecode(req.cookies.authToken);
-  const email = 'default@default.default'
+  const { email } = jwtDecode(req.cookies.authToken);
 
   const containerClient = blobServiceClient.getContainerClient(containerName);
 
