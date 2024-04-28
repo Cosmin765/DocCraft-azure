@@ -6,5 +6,5 @@ Services:
 - Event Hub (events trigger)
 - Lambda Function (event handling)
 - Translator
-- Fluid Relay (live edit) - wip
-- Autoscale + LoadBalancing - wip
+- Autoscale
+- Monitor

@@ -38,7 +38,7 @@ const eventHubProducer = new EventHubProducerClient(connectionString, eventHubNa
 app.use(express.static('public'));
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net'],
+  origin: ['http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net', 'https://doccraft-frontend2.azurewebsites.net'],
   optionsSuccessStatus: 200,
   credentials: true
 }));
