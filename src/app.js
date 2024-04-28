@@ -38,7 +38,7 @@ const eventHubProducer = new EventHubProducerClient(connectionString, eventHubNa
 app.use(express.static('public'));
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com'],
+  origin: ['http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net'],
   optionsSuccessStatus: 200,
   credentials: true
 }));
@@ -172,7 +172,7 @@ async function streamToBuffer(readableStream) {
 
 app.post('/api/translate', async (req, res) => {
   try {
-    const { email } = jwtDecode(req.cookies.authToken);
+    const { email } = jwtDecode(req.headers.authorization);
 
     const blobName = req.query.blobName;
     const sourceLanguage = req.query.sourceLanguage;
@@ -229,7 +229,7 @@ app.post('/api/translate', async (req, res) => {
 
 
 app.post('/login', async (req, res) => {
-  const { name, email } = jwtDecode(req.cookies.authToken);
+  const { name, email } = jwtDecode(req.headers.authorization);
 
   const user = await prisma.users.findFirst({where: { email }});
   if (!user) {
@@ -259,7 +259,7 @@ app.post('/login', async (req, res) => {
 
 app.get('/files', async (req, res) => {
   try {
-    const { email } = jwtDecode(req.cookies.authToken);
+    const { email } = jwtDecode(req.headers.authorization);
 
     const user = await prisma.users.findFirst({ where: { email: email } });
     if (!user) {
@@ -288,7 +288,7 @@ app.get('/contents/:filename', async (req, res) => {
   if (!filename) {
     return res.status(400).send('Filename is required.');
   }
-  const { email } = jwtDecode(req.cookies.authToken);
+  const { email } = jwtDecode(req.headers.authorization);
 
   const owner = await prisma.users.findFirst({ where: { email: email } });
 
@@ -331,7 +331,7 @@ app.post('/save/:filename', express.json(), async (req, res) => {
   const { filename } = req.params;
   const { content } = req.body;
 
-  const { email } = jwtDecode(req.cookies.authToken);
+  const { email } = jwtDecode(req.headers.authorization);
   try {
     await saveFile(email, filename, content);
     res.status(200).send('File saved successfully.');
@@ -344,7 +344,7 @@ app.post('/save/:filename', express.json(), async (req, res) => {
 
 app.get('/users', async (req, res) => {
   try {
-    const { email } = jwtDecode(req.cookies.authToken);
+    const { email } = jwtDecode(req.headers.authorization);
 
     const emails = (await prisma.users.findMany({where: {NOT: {email}}})).map(user => user.email);
     return res.status(200).json(emails);
@@ -357,7 +357,7 @@ app.get('/users', async (req, res) => {
 app.post('/share', async (req, res) => {
   try {
     const { emailTo, permissionType, filename } = req.body;
-    const { email } = jwtDecode(req.cookies.authToken);
+    const { email } = jwtDecode(req.headers.authorization);
 
     const file = await prisma.files.findFirst({where: {file_name: filename}});
 
