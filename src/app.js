@@ -1,9 +1,187 @@
+/**
+ * @swagger
+ * components:
+ *   securitySchemes:
+ *     BearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *   schemas:
+ *     TranslateResponse:
+ *       type: object
+ *       required:
+ *         - message
+ *         - textToTranslate
+ *         - translatedText
+ *       properties:
+ *         message:
+ *           type: string
+ *           description: Info about the operation
+ *         textToTranslate:
+ *           type: string
+ *           description: The original text
+ *         translatedText:
+ *           type: string
+ *           description: The translated text
+ *       example:
+ *         message: Blob translated and uploaded successfully
+ *         textToTranslate: Salut
+ *         translatedText: Hello
+ * 
+ * /login:
+ *   post:
+ *     summary: Login
+ *     security:
+ *       - BearerAuth: [ ]
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: The string 'ok'.
+ *       500:
+ *         description: Some server error
+ * /api/blobs/:
+ *   get:
+ *     summary: List stored files.
+ *     security:
+ *       - BearerAuth: [ ]
+ *     tags: [Files]
+ *     responses:
+ *       200:
+ *         description: List of file names.
+ *       500:
+ *         description: Some server error
+ * /api/translate:
+ *   post:
+ *     summary: Translate the content of a file.
+ *     security:
+ *       - BearerAuth: [ ]
+ *     tags: [Translate]
+ *     parameters:
+ *       - name: blobName
+ *         in: query
+ *         schema:
+ *           type: string
+ *       - name: sourceLanguage
+ *         in: query
+ *         schema:
+ *           type: string
+ *       - name: targetLanguage
+ *         in: query
+ *         schema:
+ *           type: string           
+ *     responses:
+ *       200:
+ *         description: The TranslateResponse model
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TranslateResponse'
+ *       500:
+ *         description: Some server error
+ * /contents/{filename}:
+ *   get:
+ *     summary: Content of stored file.
+ *     security:
+ *       - BearerAuth: [ ]
+ *     tags: [Files]
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The name of the file
+ *     responses:
+ *       200:
+ *         description: Returns content of the file as a buffer.
+ *       500:
+ *         description: Some server error
+ * /save/{filename}:
+ *   post:
+ *     summary: Save content to a file.
+ *     security:
+ *       - BearerAuth: [ ]
+ *     tags: [Files]
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The name of the file
+ *     requestBody:
+ *       description: The body of the file to be saved
+ *       required: true
+ *       content:
+ *        application/json:
+ *          schema:
+ *            type: object
+ *            properties:
+ *              content: 
+ *                type: string
+ *     responses:
+ *       200:
+ *         description: Content of the file as a buffer
+ *       500:
+ *         description: Some server error
+ * /users:
+ *   get:
+ *     summary: Get list of users excluding the current user
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Users]
+ *     responses:
+ *       200:
+ *         description: A list of user emails excluding the current user's email
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: string
+ *                 format: email
+ *       500:
+ *         description: Internal Server Error
+ * /share:
+ *   post:
+ *     summary: Share file permissions with another user.
+ *     security:
+ *       - bearerAuth: []
+ *     tags: [Files]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - emailTo
+ *               - permissionType
+ *               - filename
+ *             properties:
+ *               emailTo:
+ *                 type: string
+ *                 format: email
+ *               permissionType:
+ *                 type: string
+ *               filename:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Ok
+ *       403:
+ *         description: Unauthorized
+ *       500:
+ *         description: Internal Server Error
+*/
+
 'use strict';
 
 const express = require('express');
 const multer = require('multer');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const swaggerJsdoc = require("swagger-jsdoc");
+const swaggerUi = require("swagger-ui-express");
 const cookieParser = require('cookie-parser');
 const os = require('os');
 
@@ -229,14 +407,19 @@ app.post('/api/translate', async (req, res) => {
 
 
 app.post('/login', async (req, res) => {
-  const { name, email } = jwtDecode(req.headers.authorization);
-
-  const user = await prisma.users.findFirst({where: { email }});
-  if (!user) {
-    await prisma.users.create({data: {email, username: name}});
+  try {
+    const { name, email } = jwtDecode(req.headers.authorization);
+  
+    const user = await prisma.users.findFirst({where: { email }});
+    if (!user) {
+      await prisma.users.create({data: {email, username: name}});
+    }
+  
+    res.status(200).json("ok");
+  } catch(error) {
+    console.error(error);
+    res.status(500).end();
   }
-
-  res.status(200).json("ok");
 });
 
 
@@ -296,8 +479,6 @@ app.get('/contents/:filename', async (req, res) => {
     return res.status(403).send('Forbidden');
   }
 
-  // TODO: verifica permisiunea de write
-  // prisma.files.findFirst({where: {email: email, file_name}})
   const fileInDB = await prisma.files.findFirst({where:{file_name: filename}})
 
   if (!fileInDB) {
@@ -387,21 +568,28 @@ app.post('/share', async (req, res) => {
   }
 });
 
-app.get('/test-event', async (req, res) => {
-  try {
-    try {
-      const batch = await eventHubProducer.createBatch();
-      batch.tryAdd({body: {emailFrom: "email", emailTo: "emailTo", permissionType: "permissionType", fileName: ":"}});
-      await eventHubProducer.sendBatch(batch);
+const options = {
+  definition: {
+    openapi: "3.1.0",
+    info: {
+      title: "Doc for DocCraft",
+      version: "0.1.0",
+    },
+    servers: [
+      {
+        url: `http://${HOSTNAME}:${PORT}`,
+      },
+    ],
+  },
+  apis: ["./*.js"],
+};
 
-    } catch(_) {}
-
-    return res.status(200).send('Ok');
-  } catch(error) {
-    console.log(error);
-    return res.status(500).send('Internal Server Error');
-  }
-});
+const specs = swaggerJsdoc(options);
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(specs)
+);
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}, ${HOSTNAME}`);

@@ -16,10 +16,10 @@
     "start": "node app.js"
   },
   "dependencies": {
+    "@azure/core-lro": "2.7.2",
     "@azure/event-hubs": "^5.11.4",
     "@azure/identity": "^4.1.0",
     "@azure/storage-blob": "^12.17.0",
-    "@azure/core-lro": "2.7.2",
     "@prisma/client": "^5.12.1",
     "axios": "^1.6.8",
     "body-parser": "^1.20.2",
@@ -30,6 +30,8 @@
     "jwt-decode": "^4.0.0",
     "multer": "^1.4.5-lts.1",
     "prisma": "^5.12.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.0",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
