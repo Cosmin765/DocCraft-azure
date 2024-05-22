@@ -240,7 +240,7 @@ app.use(cors({
 }));
 
 
-const accountName = "doccraftfiles";
+const accountName = "doccraftfiles2";
 const containerName = "files";
 
 const blobServiceClient = new BlobServiceClient(
