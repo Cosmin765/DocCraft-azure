@@ -299,9 +299,9 @@ app.get('/api/blobs/', async (req, res) => {
 });
 
 
-let translateKey = "a6c848f29fd84ea3842e01d08e3164b8";
-let endpoint = "https://api.cognitive.microsofttranslator.com/";
-let location = "northeurope";
+let translateKey = env.TRANSLATE_KEY;
+let endpoint = env.TRANSLATE_ENDPOINT;
+let location = env.TRANSLATE_LOCATION;
 
 async function translateText(translateKey, endpoint, location, text, from, to){
   try {
