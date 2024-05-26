@@ -373,8 +373,8 @@ app.post('/api/translate', async (req, res) => {
     console.log(translatedText)
 
     console.log('Uploading the translated document to the container')
-    const extension = blobName.substr(blobName.lastIndexOf('.'), blobName.length)
-    const new_title = blobName.substr(0, blobName.lastIndexOf('.')) +"_to_"+targetLanguage+"_"+extension
+    const extension = blobName.lastIndexOf('.') !== -1 ? blobName.substr(blobName.lastIndexOf('.'), blobName.length) : '';
+    const new_title = (blobName.lastIndexOf('.') !== -1 ? blobName.substr(0, blobName.lastIndexOf('.')) : blobName) +"_to_"+targetLanguage+"_"+extension
 
 
     const blockBlobClient = containerClient.getBlockBlobClient(new_title);
