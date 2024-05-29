@@ -212,10 +212,10 @@ const app = express();
 const eventHubName = process.env.EVENT_HUB_NAME;
 const connectionString = process.env.HUB_CONNECTION_STRING;
 const eventHubProducer = new EventHubProducerClient(connectionString, eventHubName);
-
+const DEPLOY_URL = process.env.DEPLOY_URL;
 app.use(express.static('public'));
 app.use(cors({
-  origin: [`https://${HOSTNAME}:${PORT}`, `http://${HOSTNAME}:${PORT}`, 'http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net', 'https://doccraft-frontend2.azurewebsites.net'],
+  origin: [DEPLOY_URL, 'http://localhost:8083', 'http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net', 'https://doccraft-frontend2.azurewebsites.net'],
   optionsSuccessStatus: 200,
   credentials: true
 }));
@@ -282,15 +282,26 @@ const saveFile = async (email, filename, content) => {
 
 app.get('/api/blobs/', async (req, res) => {
   try {
-    const containerClient = blobServiceClient.getContainerClient(containerName);
+    const { email } = jwtDecode(req.headers.authorization);
 
-    const blobs = [];
-    for await (const blob of containerClient.listBlobsFlat()) {
-      const tempBlockBlobClient = containerClient.getBlockBlobClient(blob.name);
-      blobs.push(blob.name);
+    if (!email) {
+      return res.status(400).send('Email is required.');
     }
-
-    res.json(blobs);
+    const result = await prisma.files.findMany({
+      where: {
+        file_permissions: {
+          some: {
+            users: {
+              email: email,
+            },
+          },
+        },
+      },
+      select: {
+        file_name: true,
+      },
+    });
+    res.json(result.map(file => file.file_name));
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -354,9 +365,6 @@ app.post('/api/translate', async (req, res) => {
     const blobName = req.query.blobName;
     const sourceLanguage = req.query.sourceLanguage;
     const targetLanguage = req.query.targetLanguage;
-    console.log(blobName)
-    console.log(sourceLanguage)
-    console.log(targetLanguage)
     const containerClient = blobServiceClient.getContainerClient(containerName);
     const blobClient = containerClient.getBlobClient(blobName);
 
@@ -364,12 +372,9 @@ app.post('/api/translate', async (req, res) => {
     console.log('\nDownloaded blob content...');
 
     const textt = await streamToBuffer(downloadedContent.readableStreamBody)
-    console.log(typeof(textt))
     const textToTranslate = textt.toString();
-    console.log(typeof(textToTranslate))
-    console.log(textToTranslate)
+
     const translatedText =  await translateText(translateKey, endpoint, location, textToTranslate, sourceLanguage, targetLanguage)
-    console.log(translatedText)
 
     console.log('Uploading the translated document to the container')
     const extension = blobName.lastIndexOf('.') !== -1 ? blobName.substr(blobName.lastIndexOf('.'), blobName.length) : '';
@@ -578,6 +583,9 @@ const options = {
       {
         url: `http://${HOSTNAME}:${PORT}`,
       },
+      {
+        url: DEPLOY_URL
+      }
     ],
   },
   apis: ["./*.js"],
