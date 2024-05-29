@@ -214,9 +214,8 @@ const connectionString = process.env.HUB_CONNECTION_STRING;
 const eventHubProducer = new EventHubProducerClient(connectionString, eventHubName);
 
 app.use(express.static('public'));
-
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net', 'https://doccraft-frontend2.azurewebsites.net'],
+  origin: [`https://${HOSTNAME}:${PORT}`, `http://${HOSTNAME}:${PORT}`, 'http://localhost:3000', 'https://frontend-dot-cloud-419006.lm.r.appspot.com', 'https://doccraft-frontend.azurewebsites.net', 'https://doccraft-frontend2.azurewebsites.net'],
   optionsSuccessStatus: 200,
   credentials: true
 }));
